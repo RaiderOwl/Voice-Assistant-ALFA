@@ -348,7 +348,7 @@ df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_music, 'la
 df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_weather, 'label': '1'})], ignore_index=True)
 df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_date, 'label': '2'})], ignore_index=True)
 df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_program, 'label': '3'})], ignore_index=True)
-df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_calculation, 'label': '4'})], ignore_index=True)
+# df = pd.concat([df, pd.DataFrame({'sentence': generated_sentences_for_calculation, 'label': '4'})], ignore_index=True)
 
 
 df = df.sample(frac=1).reset_index(drop=True)

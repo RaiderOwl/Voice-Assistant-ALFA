@@ -30,7 +30,8 @@ def listen():
     text = ""
     r = sr.Recognizer()
     with sr.Microphone() as source:                # use the default microphone as the audio source
-        r.adjust_for_ambient_noise(source, duration=0.5) #adjust the energy threshold based on the surrounding noise level
+        r.adjust_for_ambient_noise(source, duration=0.2) #adjust the energy threshold based on the surrounding noise level
+        speak("sizi dinliyorum")
         audio = r.listen(source)
         try:
             text = r.recognize_google(audio, language='tr-TR')
@@ -39,11 +40,11 @@ def listen():
             if text == "kapan":
                 sys.exit()
         except LookupError:                            # speech is unintelligible
-            log("Anlayamadım")
-            text = "error" 
+            log("Tekrar söyler misiniz")
+            return listen()
         except sr.UnknownValueError:
             log("Bilinmeyen Hata")
-            text = "error"
+            return listen()
     return text
 
 def speak(audiostring):
@@ -51,7 +52,7 @@ def speak(audiostring):
     engine.say(audiostring)
     engine.runAndWait()
 
-def alfa(command):
+def classify(command):
     speak("İşleme Alındı")
     model = joblib.load("newsvcmodel.pkl")
     vectorizer = joblib.load("newsvmvectorizer.pkl")
@@ -61,19 +62,26 @@ def alfa(command):
     print(category)
     return category
 
-def write_json(data, json_path):
-    with open(json_path, 'w') as json_file:
-            json.dump(data, json_file)
+def do_actions(category, response):
+    speak(Calculation.calculate(response))
 
-def load_json(json_path):
-    with open(json_path, 'r') as json_file:
-        return json.load(json_file)
+class Json ():
+    def __init__(self, name):
+        self.name = name
+        self.functions = {}
+
+    def write_json(data, json_path):
+        with open(json_path, 'w') as json_file:
+                json.dump(data, json_file)
+
+    def load_json(json_path):
+        with open(json_path, 'r') as json_file:
+            return json.load(json_file)
     
-def append_json(data, json_path):
-    loaded_data = load_json(json_path)
-    loaded_data.append(data)
-    write_json(loaded_data,json_path)
-
+    def append_json(data, json_path):
+        loaded_data = Json.load_json(json_path)
+        loaded_data.append(data)
+        Json.write_json(loaded_data,json_path)
 
 class Music():
     def __init__(self, name):
@@ -202,7 +210,7 @@ class Programs():
         self.functions = {}
 
     def open(program_name):
-        json_file = load_json("program_data.json")
+        json_file = Json.load_json("program_data.json")
 
         for program_data in json_file:
             print(program_data)
@@ -214,7 +222,7 @@ class Programs():
     def close(program_name):
         # Run the tasklist command to get a list of processes
         result = subprocess.run(['tasklist'], stdout=subprocess.PIPE, text=True)
-        json_file = load_json("program_data.json")
+        json_file = Json.load_json("program_data.json")
         for data in json_file:
             if data['program_name'] == program_name:
                  exe_name = data['exe_name']
@@ -229,12 +237,49 @@ class Programs():
 
     def append_program_info(program_name,path,exe_name):
         data = {"program_name": program_name, "path": path, "exe_name": exe_name}
-        append_json(data,"program_data.json")
+        Json.append_json(data,"program_data.json")
 
 class Calculation():
     def __init__(self, name):
         self.name = name
         self.functions = {}
+    
+    def get_numbers():
+        numbers = []
+        speak("işlem yapılacak ilk numarayı söyleyin")
+        num1 = listen()
+        numbers.append(num1)
+        speak("işlem yapılacak ikinci numarayı söyleyin")
+        num2 = listen()
+        numbers.append(num2)
+        return numbers
+    
+    def add(numbers):
+        return int(numbers[0]) + int(numbers[1])
+    
+    def subtract(numbers):
+        return int(numbers[0]) - int(numbers[1])
+    
+    def multiple(numbers):
+        return int(numbers[0]) * int(numbers[1])
+    
+    def divide(numbers):
+        if int(numbers[0]) < int(numbers[1]):
+            return int(numbers[1]) / int(numbers[0])
+        else:
+            return int(numbers[0]) / int(numbers[1])
+        
+    def calculate(process):
+        numbers = []
+        numbers = Calculation.get_numbers()
+        if process == "topla":
+            return Calculation.add(numbers)
+        elif process == "çıkar":
+            return Calculation.subtract(numbers)
+        elif process == "çarp":
+            return Calculation.multiple(numbers)
+        elif process == "böl":
+            return Calculation.divide(numbers)
 
 # def do_actions(category):
 #     function_mapping = {
@@ -248,33 +293,16 @@ class Calculation():
 #     function_mapping[category]()
 
 engine = pyttsx3.init()
-engine.setProperty('rate', 150)
+voices = engine.getProperty("voices")
+engine.setProperty("voice", voices[1].id)
+
 welcometext = "Merhaba Ben alfa"
-
-alfa("Steam uygulamasını açar mısın")
-print(3)
-alfa("6 ile 10 çarp")
-print(4)
-alfa("Note kapat")
-print(3)
-alfa("Bugün hava nasıl")
-print(1)
-alfa("Ankarada hava nasıl")
-print(1)
-alfa("sibel can çakmak çakmak çal")
-print(0)
-alfa("Elifin doğum günü ne ")
-print(2)
-alfa("3 kere 3")
-print(4)
-
 speak(welcometext)
 
 while True:
     response = listen()
-    if response != "error" :
-        category = alfa(response)
-        #do_actions(category)
+    category = classify(response)
+    do_actions(category, response)
 
 
 
