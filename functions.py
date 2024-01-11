@@ -50,7 +50,6 @@ def listen():
             log("Tekrar söyler misiniz")
             return listen()
         except sr.UnknownValueError:
-            log("Bilinmeyen Hata")
             return listen()
     return text
 
@@ -58,32 +57,34 @@ def do_actions(category,command):
     if command == "özel gün ekle":
         Date.append_special_days()
         return
+    if command == "program ekle" :
+        Programs.append_program_info()
+        return
     if "topla" == command:
-        Calculation.calculate("topla")
+        Calculation.calculate(command)
         return
     elif "çıkar" == command:
-        Calculation.calculate("çıkar")
+        Calculation.calculate(command)
         return
-    elif "böl" == command:
-        Calculation.calculate("böl")
+    elif "bölme" == command:
+        Calculation.calculate(command)
         return
-    elif "çarp" == command:
-        Calculation.calculate("çarp")
+    elif "çarpma" == command:
+        Calculation.calculate(command)
         return
+    elif "bugünün tarihi" in command:
+            Date.current_date()
+            return
         
     if category == 0:
-        kontrol_listesi = ["oynat", "çal", "aç"]
-        if any(substring in command for substring in kontrol_listesi):
+        if "oynat" in command or "çal" in command or "aç" in command:
             Music.play_music(command)
             return
     elif category == 1:
         Weather.weather_info()
         return
     elif category == 2:
-        if "bugünün tarihi" in command:
-            Date.current_date()
-            return
-        elif "hangi gün" in command:
+        if "hangi gün" in command:
             Date.current_day()
             return
         elif "hangi ay" in command:
@@ -96,10 +97,7 @@ def do_actions(category,command):
             Date.special_days()
             return
     elif category == 3:
-        if "program ekle" in command:
-            Programs.append_program_info()
-            return
-        if "aç" or "başlat" in command:
+        if "aç" in command or "başlat" in command:
             Programs.open()
             return
         elif "kapat" or "sonlandır" in command:
@@ -226,8 +224,10 @@ class Date():
         day_name = listen()
         speak("Özel günün tarihini söyler misiniz")
         day_date = listen()
+        json_data = Json.load_json("Json\special_day_data.json")
         data = {"day_name": day_name, "datetime": day_date}
-        Json.write_json(data,"Json\special_day_data.json")
+        json_data.append(data)
+        Json.write_json(json_data,"Json\special_day_data.json")
         speak("Özel gün eklendi")
     
 class Programs():
@@ -245,7 +245,7 @@ class Programs():
             if program_data['program_name'] == program_name:
                  program_path = program_data['path']
                  os.startfile(program_path)
-                 speak(program_name + "açıldı")
+                 speak(program_name + " açıldı")
                  break
 
     def close():
@@ -263,16 +263,15 @@ class Programs():
         if program_name.lower() in result.stdout.lower():
             # Terminate the process
             os.system(f'taskkill /im {exe_name}.exe /f')
-            print(f"Closed {program_name} successfully.")
         else:
-            print(f"Program {program_name} not found.")
+            print(f"Program {program_name} listede bulunamadı")
 
-    def append_program_info(program_name,path,exe_name):
+    def append_program_info():
         speak("program adını giriniz")
         program_name = input()
         speak("programın yolunu giriniz")
         path = input()
-        speak("program exe adını giriniz")
+        speak("program kısayol adını giriniz")
         exe_name = input()
         data = {"program_name": program_name, "path": path, "exe_name": exe_name}
         Json.append_json(data,"Json\program_data.json")
@@ -307,11 +306,11 @@ class Calculation():
                 result = int(numbers[0]) - int(numbers[1])
             speak("Cevap " + str(result))
             return
-        elif process == "çarp":
+        elif process == "çarpma":
             result = int(numbers[0]) * int(numbers[1])
             speak("Cevap " + str(result))
             return 
-        elif process == "böl":
+        elif process == "bölme":
             if int(numbers[0]) < int(numbers[1]):
                 result = int(numbers[1]) / int(numbers[0])
             else:
